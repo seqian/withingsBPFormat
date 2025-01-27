@@ -5,17 +5,24 @@ def format_blood_pressure_csv(input_file, output_file):
     with open(input_file, mode='r', newline='') as infile, open(output_file, mode='w', newline='') as outfile:
         reader = csv.reader(infile)
         in_headers = next(reader)[0].split(';')
-        out_headers = ['Date', 'Time', 'Timezone'] + in_headers[1:] # [1:] To avoid first column, Date
+        out_headers = ['Date', 'Time', 'Timezone'] + in_headers[1:] # Skip the first column (Date)
+        
         writer = csv.DictWriter(outfile, out_headers)
         
         writer.writeheader()
         for row in reader:
-            row_dict = {in_headers[i]: row[i] for i in range(len(in_headers))}
+            row_dict = dict(zip(in_headers, row))
             timestamp = row_dict['Date']
-            dt = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f%z')
+            try:
+                try:
+                    dt = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f%z')
+                except ValueError:
+                    dt = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S%z')
+            except ValueError:
+                dt = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S')
             row_dict['Date'] = dt.strftime('%Y-%m-%d')
             row_dict['Time'] = dt.strftime('%H:%M:%S')
-            row_dict['Timezone'] = dt.strftime('%z') # TODO: Improve Timezone output structure
+            row_dict['Timezone'] = dt.strftime('%z') # TODO: Convert timezone to a more readable format (e.g., 'UTC+01:00') for better clarity in the output CSV
             writer.writerow(row_dict)
 
 if __name__ == "__main__":
